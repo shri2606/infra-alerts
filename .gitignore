@@ -1,0 +1,136 @@
+# CloudInfraAI - Git Ignore File
+# ==============================
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Claude Code
+.claude/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+*.ipynb
+
+# Data files (keep structure, ignore content)
+data/raw/*.csv
+data/raw/*.json
+data/raw/*.log
+data/processed/*.csv
+data/processed/*.json
+data/processed/*.pkl
+
+# Model artifacts
+saved_models/*.pth
+saved_models/*.pkl
+saved_models/checkpoints/
+saved_models/artifacts/
+
+# Outputs (analysis and features)
+outputs/analysis/*
+outputs/features/*
+!outputs/analysis/.gitkeep
+!outputs/features/.gitkeep
+
+# Logs
+logs/*.log
+logs/*.txt
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# PyTorch
+*.pth
+*.pt
+
+# Matplotlib
+*.png
+*.jpg
+*.jpeg
+*.pdf
+
+# Environment variables
+.env.local
+.env.development
+.env.production
+
+# Credentials and secrets
+credentials.json
+secrets.yaml
+slack_webhook.txt
+
+# Cache
+.cache/
+.pytest_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# Documentation builds
+docs/_build/
+docs/site/
+
+# Documentation folder (PRDs and design docs)
+docs/
+
+# Docker
+Dockerfile.local
+docker-compose.override.yml
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# Keep empty directories
+!.gitkeep

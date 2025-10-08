@@ -1,0 +1,16 @@
+{
+  "total_sequences": 3,
+  "anomaly_ratio": 1.0,
+  "numerical_features": 14,
+  "categorical_features": 6,
+  "binary_features": 8,
+  "aggregate_features": 9,
+  "vocab_sizes": {
+    "Level": 2,
+    "Component": 9,
+    "EventId": 38,
+    "http_method": 4,
+    "vm_event_type": 5,
+    "instance_id_hash": 6
+  }
+}

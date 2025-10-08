@@ -1,0 +1,34 @@
+# CloudInfraAI Data Processing Requirements
+# ========================================
+# Python 3.9+ requirements for data analysis and feature engineering
+# Optimized for Apple M2 Pro (16GB RAM)
+
+# Core Data Processing
+pandas>=1.5.0
+numpy>=1.21.0
+scikit-learn>=1.2.0
+
+# Machine Learning Framework
+torch>=2.0.0                # PyTorch with MPS support for M2 Pro
+torchvision>=0.15.0
+
+# Data Visualization
+matplotlib>=3.6.0
+seaborn>=0.12.0
+
+# Utilities
+pathlib2>=2.3.7
+tqdm>=4.64.0
+
+# Development Tools (Optional)
+jupyter>=1.0.0              # For notebook development
+ipython>=8.0.0
+
+# Performance (Optional)
+numba>=0.56.0               # JIT compilation for speedup
+
+# Future Model Dependencies (To be added later)
+# streamlit>=1.28.0         # For dashboard
+# redis>=4.5.0              # For streaming
+# psycopg2-binary>=2.9.0    # For PostgreSQL
+# plotly>=5.15.0            # For interactive charts
