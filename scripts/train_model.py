@@ -140,13 +140,15 @@ def main():
     # Calculate class weights for imbalanced dataset
     pos_weight = calculate_pos_weight(train_data[1])
 
-    # Create trainer
+    # Create trainer (using default 0.5 threshold for training)
+    # Optimal threshold (0.55) should be applied during inference, not training
     trainer = ModelTrainer(
         model=model,
         device=device,
         learning_rate=ModelConfig.LEARNING_RATE,
         weight_decay=1e-5,
-        pos_weight=pos_weight
+        pos_weight=pos_weight,
+        threshold=0.5  # Use default during training
     )
 
     # Create data loaders

@@ -101,7 +101,8 @@ class ModelTrainer:
         device: torch.device,
         learning_rate: float = 1e-4,
         weight_decay: float = 1e-5,
-        pos_weight: Optional[float] = None
+        pos_weight: Optional[float] = None,
+        threshold: float = 0.5
     ):
         """
         Initialize trainer.
@@ -112,9 +113,11 @@ class ModelTrainer:
             learning_rate: Learning rate
             weight_decay: Weight decay for regularization
             pos_weight: Positive class weight for imbalanced dataset
+            threshold: Classification threshold for predictions
         """
         self.model = model.to(device)
         self.device = device
+        self.threshold = threshold
 
         # Optimizer
         self.optimizer = optim.AdamW(
@@ -141,6 +144,8 @@ class ModelTrainer:
             'train_acc': [],
             'val_loss': [],
             'val_acc': [],
+            'val_precision': [],
+            'val_recall': [],
             'val_f1': [],
             'learning_rates': []
         }
@@ -148,6 +153,7 @@ class ModelTrainer:
         logger.info(f"Trainer initialized on device: {device}")
         if pos_weight is not None:
             logger.info(f"Using positive class weight: {pos_weight:.2f}")
+        logger.info(f"Using classification threshold: {threshold:.2f}")
 
     def train_epoch(self, train_loader: DataLoader) -> Tuple[float, float]:
         """
@@ -184,6 +190,12 @@ class ModelTrainer:
             # Compute loss only on valid (non-padded) positions
             loss = self.criterion(logits_flat, labels_flat)
 
+            # Validate loss is non-negative
+            if loss.item() < 0:
+                logger.error(f"❌ NEGATIVE LOSS DETECTED: {loss.item()}")
+                logger.error(f"This indicates a bug in loss calculation or pos_weight")
+                raise ValueError(f"Loss cannot be negative! Got {loss.item()}")
+
             # Backward pass
             loss.backward()
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
@@ -191,7 +203,7 @@ class ModelTrainer:
 
             # Track metrics
             total_loss += loss.item()
-            predictions = (torch.sigmoid(logits_flat) >= 0.5).float()
+            predictions = (torch.sigmoid(logits_flat) >= self.threshold).float()
             correct += (predictions == labels_flat).sum().item()
             total += labels_flat.size(0)
 
@@ -237,7 +249,7 @@ class ModelTrainer:
                 total_loss += loss.item()
 
                 # Store predictions and labels (event-level)
-                predictions = (torch.sigmoid(logits_flat) >= 0.5).float()
+                predictions = (torch.sigmoid(logits_flat) >= self.threshold).float()
                 all_predictions.extend(predictions.cpu().numpy())
                 all_labels.extend(labels_flat.cpu().numpy())
 
@@ -305,6 +317,8 @@ class ModelTrainer:
             self.history['train_acc'].append(train_acc)
             self.history['val_loss'].append(val_loss)
             self.history['val_acc'].append(val_acc)
+            self.history['val_precision'].append(val_precision)
+            self.history['val_recall'].append(val_recall)
             self.history['val_f1'].append(val_f1)
             self.history['learning_rates'].append(current_lr)
 
@@ -315,7 +329,7 @@ class ModelTrainer:
                 f"Epoch {epoch+1}/{num_epochs} ({epoch_time:.2f}s) - "
                 f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f} - "
                 f"Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}, "
-                f"Val F1: {val_f1:.4f}, LR: {current_lr:.6f}"
+                f"Val P/R/F1: {val_precision:.4f}/{val_recall:.4f}/{val_f1:.4f}, LR: {current_lr:.6f}"
             )
 
             # Early stopping and checkpointing
@@ -381,20 +395,26 @@ def calculate_pos_weight(labels: torch.Tensor) -> float:
     Calculate positive class weight for imbalanced dataset.
 
     Args:
-        labels: Training labels
+        labels: Training labels [batch_size, seq_len] for event-level
 
     Returns:
         Positive class weight
     """
-    num_positive = labels.sum().item()
-    num_negative = len(labels) - num_positive
+    # Flatten labels to get all events (not just sequences)
+    labels_flat = labels.view(-1)  # Flatten to 1D
+
+    num_positive = (labels_flat == 1).sum().item()
+    num_negative = (labels_flat == 0).sum().item()
 
     if num_positive == 0:
+        logger.warning("No positive samples in training set!")
         return 1.0
 
     pos_weight = num_negative / num_positive
+
     logger.info(f"Class distribution - Positive: {num_positive}, Negative: {num_negative}")
     logger.info(f"Calculated pos_weight: {pos_weight:.2f}")
+    logger.info(f"Anomaly ratio: {num_positive/(num_positive+num_negative)*100:.1f}%")
 
     return pos_weight
 

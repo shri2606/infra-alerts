@@ -61,6 +61,17 @@ saved_models/*.pkl
 saved_models/checkpoints/
 saved_models/artifacts/
 
+# Model versions - ignore .pth files but keep metadata
+saved_models/v_*/best_model.pth
+saved_models/v_*/anomaly_detector_v1.pth
+saved_models_copy/
+
+# Keep version metadata and results
+!saved_models/v_*/metadata.json
+!saved_models/v_*/test_results.json
+!saved_models/v_*/training_history.json
+!saved_models/v_*/threshold_optimization_results.json
+
 # Outputs (analysis and features)
 outputs/analysis/*
 outputs/features/*
