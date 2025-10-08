@@ -58,14 +58,14 @@ class DataConfig:
     ANALYSIS_SUMMARY_PATH = ANALYSIS_OUTPUT_DIR / "analysis_summary.txt"
     ANALYSIS_PLOTS_PATH = ANALYSIS_OUTPUT_DIR / "analysis_visualizations.png"
 
-    # Feature outputs
-    TRAIN_DATA_PATH = FEATURES_OUTPUT_DIR / "train_data.pt"
-    VAL_DATA_PATH = FEATURES_OUTPUT_DIR / "val_data.pt"
-    TEST_DATA_PATH = FEATURES_OUTPUT_DIR / "test_data.pt"
-    ENCODERS_PATH = FEATURES_OUTPUT_DIR / "encoders.json"
-    SCALERS_PATH = FEATURES_OUTPUT_DIR / "scalers.json"
-    FEATURE_CONFIG_PATH = FEATURES_OUTPUT_DIR / "feature_config.json"
-    FEATURE_STATS_PATH = FEATURES_OUTPUT_DIR / "feature_stats.json"
+    # Feature outputs (using outputs/ directly since that's where files are)
+    TRAIN_DATA_PATH = OUTPUTS_DIR / "train_data.pt"
+    VAL_DATA_PATH = OUTPUTS_DIR / "val_data.pt"
+    TEST_DATA_PATH = OUTPUTS_DIR / "test_data.pt"
+    ENCODERS_PATH = OUTPUTS_DIR / "encoders.json"
+    SCALERS_PATH = OUTPUTS_DIR / "scalers.json"
+    FEATURE_CONFIG_PATH = OUTPUTS_DIR / "feature_config.json"
+    FEATURE_STATS_PATH = OUTPUTS_DIR / "feature_stats.json"
 
 class ModelConfig:
     """Model architecture and training configuration."""

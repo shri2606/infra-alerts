@@ -1,0 +1,8 @@
+{
+  "test_loss": -0.12483152747154236,
+  "test_accuracy": 0.94,
+  "test_precision": 0.0,
+  "test_recall": 0.0,
+  "test_f1": 0.0,
+  "timestamp": "2025-10-08T11:02:25.221918"
+}

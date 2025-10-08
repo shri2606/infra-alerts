@@ -176,9 +176,9 @@ class OpenStackFeatureEngineer:
         logger.info("Temporal features created")
         return df
 
-    def create_sequences(self, df: pd.DataFrame) -> Tuple[List[Dict], List[int]]:
-        """Create sequences from the processed dataframe."""
-        logger.info("Creating sequences...")
+    def create_sequences(self, df: pd.DataFrame) -> Tuple[List[Dict], List[List[int]]]:
+        """Create sequences from the processed dataframe with event-level labels."""
+        logger.info("Creating sequences with event-level labels...")
 
         sequences = []
         labels = []
@@ -207,16 +207,25 @@ class OpenStackFeatureEngineer:
                 # Create sequence features
                 sequence_data = self._create_sequence_features(window_events)
 
-                # Determine label (1 if any event in window is anomaly, 0 otherwise)
-                sequence_label = int(window_events['is_anomaly'].any())
+                # Event-level labels: Get label for each event in the sequence
+                event_labels = window_events['is_anomaly'].values.tolist()
+
+                # Pad labels to match sequence length
+                pad_length = self.config.SEQUENCE_LENGTH - len(event_labels)
+                event_labels += [0] * pad_length  # Pad with 0 (normal)
 
                 sequences.append(sequence_data)
-                labels.append(sequence_label)
+                labels.append(event_labels)
 
             current_time = window_end
 
+        # Calculate statistics
+        total_events = sum(seq['sequence_length'] for seq in sequences)
+        total_anomalies = sum(sum(label[:seq['sequence_length']]) for label, seq in zip(labels, sequences))
+
         logger.info(f"Created {len(sequences)} sequences")
-        logger.info(f"Anomaly ratio: {sum(labels)/len(labels)*100:.1f}%")
+        logger.info(f"Total events: {total_events}, Anomalies: {total_anomalies}")
+        logger.info(f"Event-level anomaly ratio: {total_anomalies/total_events*100:.1f}%")
 
         return sequences, labels
 
@@ -351,9 +360,9 @@ class OpenStackFeatureEngineer:
         logger.info("Numerical normalization complete")
         return sequences
 
-    def prepare_model_inputs(self, sequences: List[Dict], labels: List[int]) -> Tuple[Dict, torch.Tensor]:
-        """Prepare inputs for PyTorch model."""
-        logger.info("Preparing model inputs...")
+    def prepare_model_inputs(self, sequences: List[Dict], labels: List[List[int]]) -> Tuple[Dict, torch.Tensor]:
+        """Prepare inputs for PyTorch model with event-level labels."""
+        logger.info("Preparing model inputs with event-level labels...")
 
         batch_size = len(sequences)
         seq_len = self.config.SEQUENCE_LENGTH
@@ -396,7 +405,7 @@ class OpenStackFeatureEngineer:
         # Prepare sequence lengths
         sequence_lengths = torch.tensor([seq['sequence_length'] for seq in sequences], dtype=torch.long)
 
-        # Prepare labels
+        # Prepare event-level labels [batch_size, seq_len]
         labels_tensor = torch.tensor(labels, dtype=torch.float32)
 
         model_inputs = {
@@ -419,17 +428,26 @@ class OpenStackFeatureEngineer:
         n_samples = len(labels)
         indices = np.arange(n_samples)
 
-        # First split: train+val / test
-        train_val_indices, test_indices = train_test_split(
-            indices, test_size=self.config.TEST_SIZE, random_state=42,
-            stratify=labels.numpy()
-        )
+        # For small datasets, simple split without stratification
+        if n_samples <= 3:
+            logger.warning(f"Very small dataset ({n_samples} samples). Using simple split without stratification.")
+            # Simple split for tiny datasets
+            train_indices = np.array([0])
+            val_indices = np.array([1]) if n_samples > 1 else np.array([0])
+            test_indices = np.array([2]) if n_samples > 2 else np.array([0])
+        else:
+            # First split: train+val / test
+            train_val_indices, test_indices = train_test_split(
+                indices, test_size=self.config.TEST_SIZE, random_state=42,
+                stratify=labels.numpy() if len(np.unique(labels.numpy())) > 1 else None
+            )
 
-        # Second split: train / val
-        train_indices, val_indices = train_test_split(
-            train_val_indices, test_size=self.config.VAL_SIZE/(1-self.config.TEST_SIZE),
-            random_state=42, stratify=labels[train_val_indices].numpy()
-        )
+            # Second split: train / val
+            train_indices, val_indices = train_test_split(
+                train_val_indices, test_size=self.config.VAL_SIZE/(1-self.config.TEST_SIZE),
+                random_state=42,
+                stratify=labels[train_val_indices].numpy() if len(np.unique(labels[train_val_indices].numpy())) > 1 else None
+            )
 
         # Create splits
         splits = {}
@@ -535,9 +553,15 @@ class OpenStackFeatureEngineer:
         torch.save(test_data, output_path / "test_data.pt")
 
         # Save feature statistics
+        # Calculate event-level anomaly ratio
+        total_events = sum(seq['sequence_length'] for seq in sequences)
+        total_anomalies = sum(sum(label[:seq['sequence_length']]) for label, seq in zip(labels, sequences))
+
         feature_stats = {
             'total_sequences': len(sequences),
-            'anomaly_ratio': sum(labels) / len(labels),
+            'total_events': total_events,
+            'total_anomalies': total_anomalies,
+            'event_level_anomaly_ratio': total_anomalies / total_events if total_events > 0 else 0,
             'numerical_features': len(sequences[0]['numerical']),
             'categorical_features': len(sequences[0]['categorical']),
             'binary_features': len(sequences[0]['binary']),
