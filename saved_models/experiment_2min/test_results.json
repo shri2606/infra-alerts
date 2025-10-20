@@ -1,0 +1,16 @@
+{
+  "test_loss": 0.4550987184047699,
+  "test_accuracy": 0.9666666666666667,
+  "test_precision": 0.65,
+  "test_recall": 0.8125,
+  "test_f1": 0.7222222222222223,
+  "timestamp": "2025-10-20T11:48:27.842789",
+  "experiment": "2min_windows_30sec_stride",
+  "baseline_comparison": {
+    "accuracy_change": 0.00666666666666671,
+    "precision_change": -0.35,
+    "recall_change": 0.4825,
+    "f1_change": 0.22222222222222232
+  },
+  "success_level": "None"
+}

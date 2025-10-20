@@ -34,7 +34,8 @@ class FeatureConfig:
 
     # Sequence parameters
     SEQUENCE_LENGTH = 50  # Maximum events per sequence
-    WINDOW_SIZE_MINUTES = 5  # Time window for creating sequences
+    WINDOW_SIZE_MINUTES = 2  # EXPERIMENT: Changed from 5 to 2 minutes
+    WINDOW_STRIDE_SECONDS = 30  # EXPERIMENT: 30-second stride for 75% overlap
 
     # Anomaly thresholds
     MEMORY_SPIKE_THRESHOLD = 2560  # MB
@@ -177,18 +178,23 @@ class OpenStackFeatureEngineer:
         return df
 
     def create_sequences(self, df: pd.DataFrame) -> Tuple[List[Dict], List[List[int]]]:
-        """Create sequences from the processed dataframe with event-level labels."""
-        logger.info("Creating sequences with event-level labels...")
+        """Create sequences from the processed dataframe with event-level labels using sliding windows."""
+        logger.info("Creating sequences with sliding windows (event-level labels)...")
+        logger.info(f"Window size: {self.config.WINDOW_SIZE_MINUTES} minutes")
+        logger.info(f"Window stride: {self.config.WINDOW_STRIDE_SECONDS} seconds")
 
         sequences = []
         labels = []
+        event_ids_seen = set()  # Track event IDs to detect duplicates
 
-        # Create time windows
+        # Create time windows with stride
         start_time = df['timestamp'].min()
         end_time = df['timestamp'].max()
         current_time = start_time
         window_delta = timedelta(minutes=self.config.WINDOW_SIZE_MINUTES)
+        stride_delta = timedelta(seconds=self.config.WINDOW_STRIDE_SECONDS)
 
+        window_count = 0
         while current_time < end_time:
             window_end = current_time + window_delta
 
@@ -200,9 +206,13 @@ class OpenStackFeatureEngineer:
                 # Add sequence position
                 window_events['sequence_position'] = range(len(window_events))
 
-                # Pad or truncate to fixed length
+                # Take first N events (to minimize overlap with adjacent windows)
                 if len(window_events) > self.config.SEQUENCE_LENGTH:
                     window_events = window_events.head(self.config.SEQUENCE_LENGTH)
+
+                # Track event IDs for validation
+                window_event_ids = set(window_events.index.tolist())
+                event_ids_seen.update(window_event_ids)
 
                 # Create sequence features
                 sequence_data = self._create_sequence_features(window_events)
@@ -216,16 +226,24 @@ class OpenStackFeatureEngineer:
 
                 sequences.append(sequence_data)
                 labels.append(event_labels)
+                window_count += 1
 
-            current_time = window_end
+            # Move by stride instead of full window
+            current_time += stride_delta
 
         # Calculate statistics
         total_events = sum(seq['sequence_length'] for seq in sequences)
         total_anomalies = sum(sum(label[:seq['sequence_length']]) for label, seq in zip(labels, sequences))
 
-        logger.info(f"Created {len(sequences)} sequences")
+        logger.info(f"Created {len(sequences)} sequences (windows)")
         logger.info(f"Total events: {total_events}, Anomalies: {total_anomalies}")
         logger.info(f"Event-level anomaly ratio: {total_anomalies/total_events*100:.1f}%")
+        logger.info(f"Unique events seen: {len(event_ids_seen)}")
+
+        # Overlap analysis
+        total_duration = (end_time - start_time).total_seconds() / 60  # in minutes
+        expected_sequences = int((total_duration * 60 - self.config.WINDOW_SIZE_MINUTES * 60) / self.config.WINDOW_STRIDE_SECONDS) + 1
+        logger.info(f"Expected sequences: ~{expected_sequences}, Actual: {len(sequences)}")
 
         return sequences, labels
 
@@ -421,8 +439,8 @@ class OpenStackFeatureEngineer:
         return model_inputs, labels_tensor
 
     def create_data_splits(self, model_inputs: Dict, labels: torch.Tensor) -> Tuple[Dict, Dict, Dict]:
-        """Create train/validation/test splits."""
-        logger.info("Creating data splits...")
+        """Create time-based train/validation/test splits (no random shuffling)."""
+        logger.info("Creating time-based data splits...")
 
         # Get indices for splitting
         n_samples = len(labels)
@@ -436,18 +454,19 @@ class OpenStackFeatureEngineer:
             val_indices = np.array([1]) if n_samples > 1 else np.array([0])
             test_indices = np.array([2]) if n_samples > 2 else np.array([0])
         else:
-            # First split: train+val / test
-            train_val_indices, test_indices = train_test_split(
-                indices, test_size=self.config.TEST_SIZE, random_state=42,
-                stratify=labels.numpy() if len(np.unique(labels.numpy())) > 1 else None
-            )
+            # Time-based split (60/20/20) - NO SHUFFLING
+            # This ensures temporal independence and prevents data leakage
+            train_size = int(n_samples * 0.6)
+            val_size = int(n_samples * 0.2)
 
-            # Second split: train / val
-            train_indices, val_indices = train_test_split(
-                train_val_indices, test_size=self.config.VAL_SIZE/(1-self.config.TEST_SIZE),
-                random_state=42,
-                stratify=labels[train_val_indices].numpy() if len(np.unique(labels[train_val_indices].numpy())) > 1 else None
-            )
+            train_indices = indices[:train_size]
+            val_indices = indices[train_size:train_size + val_size]
+            test_indices = indices[train_size + val_size:]
+
+            logger.info(f"Time-based split (no shuffling):")
+            logger.info(f"  Train: sequences 0 to {train_size-1}")
+            logger.info(f"  Val: sequences {train_size} to {train_size + val_size - 1}")
+            logger.info(f"  Test: sequences {train_size + val_size} to {n_samples - 1}")
 
         # Create splits
         splits = {}
@@ -467,10 +486,15 @@ class OpenStackFeatureEngineer:
 
             splits[split_name] = (split_data, labels[split_indices])
 
-        logger.info(f"Data splits created:")
-        logger.info(f"- Train: {len(train_indices)} samples ({len(train_indices)/n_samples*100:.1f}%)")
-        logger.info(f"- Validation: {len(val_indices)} samples ({len(val_indices)/n_samples*100:.1f}%)")
-        logger.info(f"- Test: {len(test_indices)} samples ({len(test_indices)/n_samples*100:.1f}%)")
+            # Calculate anomaly counts for this split
+            split_labels = labels[split_indices]
+            split_seq_lengths = model_inputs['sequence_lengths'][split_indices]
+            total_anomalies = sum(
+                int(split_labels[i][:split_seq_lengths[i]].sum().item())
+                for i in range(len(split_indices))
+            )
+
+            logger.info(f"- {split_name.capitalize()}: {len(split_indices)} samples ({len(split_indices)/n_samples*100:.1f}%), {total_anomalies} anomalies")
 
         return splits['train'], splits['val'], splits['test']
 
@@ -506,6 +530,7 @@ class OpenStackFeatureEngineer:
         config_dict = {
             'SEQUENCE_LENGTH': self.config.SEQUENCE_LENGTH,
             'WINDOW_SIZE_MINUTES': self.config.WINDOW_SIZE_MINUTES,
+            'WINDOW_STRIDE_SECONDS': self.config.WINDOW_STRIDE_SECONDS,
             'MEMORY_SPIKE_THRESHOLD': self.config.MEMORY_SPIKE_THRESHOLD,
             'API_LATENCY_THRESHOLD': self.config.API_LATENCY_THRESHOLD,
             'BATCH_SIZE': self.config.BATCH_SIZE

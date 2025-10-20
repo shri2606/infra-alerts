@@ -1,0 +1,18 @@
+{
+  "timestamp": "2025-10-15T09:12:16.439792",
+  "total_events": 50,
+  "true_anomalies": 3,
+  "predicted_anomalies": 1,
+  "confusion_matrix": {
+    "tp": 1,
+    "fp": 0,
+    "tn": 47,
+    "fn": 2
+  },
+  "metrics": {
+    "accuracy": 96.0,
+    "precision": 100.0,
+    "recall": 33.33333333333333,
+    "f1_score": 50.0
+  }
+}
