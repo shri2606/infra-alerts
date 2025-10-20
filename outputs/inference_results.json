@@ -1,18 +1,18 @@
 {
-  "timestamp": "2025-10-15T09:12:16.439792",
-  "total_events": 50,
-  "true_anomalies": 3,
-  "predicted_anomalies": 1,
+  "timestamp": "2025-10-20T12:32:22.978332",
+  "total_events": 300,
+  "true_anomalies": 16,
+  "predicted_anomalies": 18,
   "confusion_matrix": {
-    "tp": 1,
-    "fp": 0,
-    "tn": 47,
-    "fn": 2
+    "tp": 13,
+    "fp": 5,
+    "tn": 279,
+    "fn": 3
   },
   "metrics": {
-    "accuracy": 96.0,
-    "precision": 100.0,
-    "recall": 33.33333333333333,
-    "f1_score": 50.0
+    "accuracy": 97.33333333333334,
+    "precision": 72.22222222222221,
+    "recall": 81.25,
+    "f1_score": 76.4705882352941
   }
 }
