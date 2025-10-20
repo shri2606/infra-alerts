@@ -1,0 +1,55 @@
+{
+  "memory_claims_stats": {
+    "total_claims": 21,
+    "avg_claim_mb": 2048.0,
+    "std_claim_mb": 0.0,
+    "most_common_claim": "2048"
+  },
+  "memory_usage_stats": {
+    "total_measurements": 21,
+    "avg_utilization_pct": 0.7978557626379106,
+    "max_utilization_pct": 0.7978557626379106,
+    "baseline_measurements": 21
+  },
+  "memory_spikes_count": 9,
+  "api_stats": {
+    "total_requests": 1017,
+    "avg_response_time": 0.2344538475909538,
+    "median_response_time": 0.259165,
+    "slow_requests_count": 12,
+    "error_requests_count": 41,
+    "method_distribution": {
+      "GET": 931,
+      "POST": 64,
+      "DELETE": 22
+    },
+    "status_distribution": {
+      "200": 933,
+      "404": 41,
+      "204": 22,
+      "202": 21
+    }
+  },
+  "vm_lifecycle_stats": {
+    "total_events": 109,
+    "unique_instances": 22,
+    "anomalies_count": 1,
+    "event_type_distribution": {
+      "Resumed": 44,
+      "Started": 22,
+      "Paused": 22,
+      "Stopped": 21
+    }
+  },
+  "system_health_stats": {
+    "log_level_distribution": {
+      "INFO": 1969,
+      "WARNING": 31
+    },
+    "warnings_count": 31,
+    "errors_count": 0,
+    "unknown_file_warnings": 30,
+    "most_active_component": "nova.osapi_compute.wsgi.server",
+    "most_common_event_template": "E25"
+  }
+}

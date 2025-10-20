@@ -1,0 +1,25 @@
+OpenStack Log Analysis Summary
+==================================================
+
+Dataset Overview:
+- Total log entries: 2000
+- Time range: 2017-05-16 00:00:00.008000 to 2017-05-16 00:14:47.687000
+- Duration: 0 days 00:14:47.679000
+
+Anomaly Detection:
+- Normal events: 1907 (95.3%)
+- Anomalous events: 93 (4.7%)
+
+Memory Analysis:
+- Memory spikes detected: 9
+- API requests analyzed: 1017
+- Slow requests: 12
+- Error requests: 41
+- VM lifecycle events: 109
+- Lifecycle anomalies: 1
+
+Recommendations for Model Training:
+- Use 5-minute sliding windows for sequence creation
+- Focus on memory usage, API latency, and lifecycle patterns
+- Apply class weighting due to imbalanced dataset
+- Consider data augmentation for minority class (anomalies)
