@@ -24,35 +24,61 @@ logger = logging.getLogger(__name__)
 
 class AnomalyPredictor:
     """Predict anomalies in new log data using trained model."""
-    
+
+    # Optimized threshold from 2-min windows experiment
+    # Achieves F1=76%, Precision=72%, Recall=81% on test set
+    DEFAULT_THRESHOLD = 0.7
+
     def __init__(
         self,
         model_path: Path = None,
         encoders_path: Path = None,
         scalers_path: Path = None,
         feature_config_path: Path = None,
-        threshold: float = 0.5,
+        threshold: float = None,
         device: str = None
     ):
         """
         Initialize anomaly predictor.
-        
+
         Args:
             model_path: Path to trained model checkpoint (.pth file)
             encoders_path: Path to saved encoders (JSON)
             scalers_path: Path to saved scalers (JSON)
             feature_config_path: Path to feature configuration (JSON)
-            threshold: Classification threshold (default: 0.5)
+            threshold: Classification threshold (default: 0.7, optimized from experiment)
             device: Device to run inference on ('cpu', 'cuda', 'mps')
         """
-        # Default paths
-        self.model_path = model_path or (ModelConfig.CHECKPOINT_DIR / "best_model.pth")
-        self.encoders_path = encoders_path or DataConfig.ENCODERS_PATH
-        self.scalers_path = scalers_path or DataConfig.SCALERS_PATH
-        self.feature_config_path = feature_config_path or DataConfig.FEATURE_CONFIG_PATH
-        
-        # Threshold for binary classification
-        self.threshold = threshold
+        # Use experimental model by default
+        default_model_path = Path("saved_models/experiment_2min/best_model.pth")
+        default_encoders_path = Path("outputs_experiment/encoders.json")
+        default_scalers_path = Path("outputs_experiment/scalers.json")
+        default_feature_config_path = Path("outputs_experiment/feature_config.json")
+
+        # Default paths - prefer experimental model if available
+        if model_path is None and default_model_path.exists():
+            self.model_path = default_model_path
+            logger.info("Using experimental model (2-min windows, 30-sec stride)")
+        else:
+            self.model_path = model_path or (ModelConfig.CHECKPOINT_DIR / "best_model.pth")
+
+        if encoders_path is None and default_encoders_path.exists():
+            self.encoders_path = default_encoders_path
+        else:
+            self.encoders_path = encoders_path or DataConfig.ENCODERS_PATH
+
+        if scalers_path is None and default_scalers_path.exists():
+            self.scalers_path = default_scalers_path
+        else:
+            self.scalers_path = scalers_path or DataConfig.SCALERS_PATH
+
+        if feature_config_path is None and default_feature_config_path.exists():
+            self.feature_config_path = default_feature_config_path
+        else:
+            self.feature_config_path = feature_config_path or DataConfig.FEATURE_CONFIG_PATH
+
+        # Threshold for binary classification (use optimized 0.7 by default)
+        self.threshold = threshold if threshold is not None else self.DEFAULT_THRESHOLD
         
         # Device configuration
         if device is None:

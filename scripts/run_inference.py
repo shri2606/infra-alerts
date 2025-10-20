@@ -43,13 +43,21 @@ logger = logging.getLogger(__name__)
 def load_test_data():
     """Load test data for inference."""
     logger.info("Loading test data...")
-    
-    test_data = torch.load(DataConfig.TEST_DATA_PATH, weights_only=False)
+
+    # Try to load experimental test data first, fall back to baseline
+    experimental_test_path = Path("outputs_experiment/test_data.pt")
+    if experimental_test_path.exists():
+        logger.info("Using experimental test data (2-min windows)")
+        test_data = torch.load(experimental_test_path, weights_only=False)
+    else:
+        logger.info("Using baseline test data")
+        test_data = torch.load(DataConfig.TEST_DATA_PATH, weights_only=False)
+
     sequences, labels = test_data
-    
+
     logger.info(f"Loaded {len(labels)} test sequences")
     logger.info(f"First sequence length: {sequences['numerical'][0].shape[0]}")
-    
+
     return sequences, labels
 
 
@@ -191,9 +199,9 @@ def main():
     logger.info("CLOUDINFRAAI - INFERENCE PIPELINE TEST")
     logger.info("="*60)
     
-    # Initialize predictor
+    # Initialize predictor (uses experimental model + threshold 0.7 by default)
     logger.info("\nInitializing predictor...")
-    predictor = AnomalyPredictor(threshold=0.5)
+    predictor = AnomalyPredictor()  # Uses DEFAULT_THRESHOLD = 0.7
     
     # Print model info
     model_info = predictor.get_model_info()
