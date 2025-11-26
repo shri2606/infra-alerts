@@ -78,6 +78,10 @@ outputs/features/*
 !outputs/analysis/.gitkeep
 !outputs/features/.gitkeep
 
+# Experimental and baseline outputs (ignore entire directories)
+outputs_baseline/
+outputs_experiment/
+
 # Logs
 logs/*.log
 logs/*.txt
