@@ -11,6 +11,10 @@ Usage:
     python scripts/run_streaming_demo.py --scenario normal --duration 120
 """
 
+import os
+# Enable MPS fallback for Apple Silicon compatibility
+os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
+
 import sys
 from pathlib import Path
 
