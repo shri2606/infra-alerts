@@ -27,8 +27,10 @@ ipython>=8.0.0
 # Performance (Optional)
 numba>=0.56.0               # JIT compilation for speedup
 
-# Future Model Dependencies (To be added later)
-# streamlit>=1.28.0         # For dashboard
-# redis>=4.5.0              # For streaming
-# psycopg2-binary>=2.9.0    # For PostgreSQL
-# plotly>=5.15.0            # For interactive charts
+# Dashboard and Visualization
+streamlit>=1.28.0           # For real-time dashboard
+plotly>=5.15.0              # For interactive charts
+
+# Future Dependencies (Optional)
+# redis>=4.5.0              # For streaming (not needed for current architecture)
+# psycopg2-binary>=2.9.0    # For PostgreSQL (future enhancement)

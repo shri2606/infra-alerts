@@ -6,21 +6,19 @@ Contains Streamlit dashboard application for real-time monitoring
 and visualization of infrastructure anomalies.
 
 Modules:
-- app: Main Streamlit application
-- components: Reusable dashboard components
-- visualizations: Chart and plot functions
+- app: Main Streamlit application with real-time monitoring capabilities
+
+Usage:
+    Launch the dashboard using the runner script:
+
+    $ python scripts/run_dashboard.py
+
+    Or directly with Streamlit:
+
+    $ streamlit run src/dashboard/app.py
 """
 
-# Dashboard imports will be added when implemented
-# from .app import run_dashboard
-# from .components import MetricCard, AlertPanel, TimelineChart
-# from .visualizations import create_anomaly_timeline, create_component_health_matrix
+# Dashboard is run via Streamlit, no direct imports needed
+# Use runner script: python scripts/run_dashboard.py
 
-__all__ = [
-    # "run_dashboard",
-    # "MetricCard",
-    # "AlertPanel",
-    # "TimelineChart",
-    # "create_anomaly_timeline",
-    # "create_component_health_matrix"
-]
+__all__ = []
